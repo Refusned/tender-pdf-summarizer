@@ -117,9 +117,16 @@ def select_pages(pages: list[Page], char_budget: int) -> list[Page]:
     return [chosen[n] for n in sorted(chosen)]
 
 
-def render_for_llm(pages: list[Page], char_budget: int) -> str:
-    """Склеивает отобранные страницы с номерами: по ним модель проставляет page в цитатах."""
+def render_for_llm(pages: list[Page], char_budget: int) -> tuple[str, list[int]]:
+    """Склеивает отобранные страницы с номерами: по ним модель проставляет page в цитатах.
+
+    Возвращает текст и номера реально вошедших страниц. select_pages берёт
+    первые две страницы не глядя на бюджет, поэтому здесь страница может и не
+    поместиться: список нужен, чтобы meta.pages_used не приписывал модели
+    страницы, которых она не видела.
+    """
     out: list[str] = []
+    numbers: list[int] = []
     used = 0
     for page in pages:
         head = f"\n=== Страница {page.number} ===\n"
@@ -128,8 +135,9 @@ def render_for_llm(pages: list[Page], char_budget: int) -> str:
             break
         body = page.text[:room]
         out.append(head + body)
+        numbers.append(page.number)
         used += len(head) + len(body)
-    return "".join(out).strip()
+    return "".join(out).strip(), numbers
 
 
 def _normalize(text: str) -> str:

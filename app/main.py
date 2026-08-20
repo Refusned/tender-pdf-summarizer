@@ -73,7 +73,7 @@ async def summarize(
         ) from exc
 
     selected = select_pages(pages, settings.char_budget)
-    document = render_for_llm(selected, settings.char_budget)
+    document, pages_sent = render_for_llm(selected, settings.char_budget)
 
     try:
         summary = await llm.summarize(document)
@@ -84,7 +84,7 @@ async def summarize(
         summary=summary,
         meta=Meta(
             pages_total=len(pages),
-            pages_used=[p.number for p in selected],
+            pages_used=pages_sent,
             chars_sent=len(document),
             model=llm.model,
             elapsed_ms=int((time.monotonic() - started) * 1000),

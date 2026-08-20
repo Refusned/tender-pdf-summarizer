@@ -49,7 +49,7 @@ def test_при_нехватке_бюджета_страница_со_штраф
 def test_разметка_для_модели_нумерует_страницы(sample_pdf):
     pages = select_pages(extract_pages(sample_pdf), 100_000)
 
-    document = render_for_llm(pages, 100_000)
+    document, _ = render_for_llm(pages, 100_000)
 
     assert "=== Страница 1 ===" in document
     assert "=== Страница 5 ===" in document
@@ -59,6 +59,17 @@ def test_разметка_для_модели_нумерует_страницы(
 def test_бюджет_символов_соблюдается(sample_pdf):
     pages = extract_pages(sample_pdf)
 
-    document = render_for_llm(pages, 300)
+    document, _ = render_for_llm(pages, 300)
 
     assert len(document) <= 300
+
+
+def test_страница_не_влезшая_в_бюджет_не_числится_отправленной(sample_pdf):
+    pages = extract_pages(sample_pdf)
+    # Бюджета хватает на первую страницу и лишь начало второй.
+    budget = len(pages[0].text) + 60
+
+    document, numbers = render_for_llm(pages, budget)
+
+    assert numbers == [1, 2]
+    assert "=== Страница 3 ===" not in document
